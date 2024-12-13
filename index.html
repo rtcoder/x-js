@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Binding Example</title>
+</head>
+<body>
+<input x-model="name" />
+<input x-model="age" type="number" />
+<p>Hello, {name}. You are {age} years old.</p>
+
+<script type="module">
+    import { reactive, bindElements } from './src/x.js';
+
+    const model = reactive({
+        name: 'Jon',
+        age: 28
+    });
+
+    bindElements(model);
+</script>
+</body>
+</html>
