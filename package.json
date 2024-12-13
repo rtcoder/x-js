@@ -1,0 +1,24 @@
+{
+  "name": "x-js",
+  "version": "1.0.0",
+  "description": "Simple model binding framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rtcoder/x-js.git"
+  },
+  "keywords": [
+    "framework",
+    "js",
+    "binding"
+  ],
+  "author": "rtcoder",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rtcoder/x-js/issues"
+  },
+  "homepage": "https://github.com/rtcoder/x-js#readme"
+}
