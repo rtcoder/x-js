@@ -6,16 +6,61 @@
   <title>Model Binding Example</title>
 </head>
 <body>
-<input x-model="name" />
-<input x-model="age" type="number" />
+<label>
+  Name:
+  <input x-model="name" placeholder="Enter your name" />
+</label>
+<br>
+
+<label>
+  Age:
+  <input x-model="age" type="number" placeholder="Enter your age" />
+</label>
+<br>
+
+<label>
+  Accept Terms:
+  <input x-model="termsAccepted" type="checkbox" />
+</label>
+<br>
+
+<label>
+  Gender:
+  <input x-model="gender" type="radio" value="male" /> Male
+  <input x-model="gender" type="radio" value="female" /> Female
+</label>
+<br>
+
+<label>
+  Country:
+  <select x-model="country">
+    <option value="poland">Poland</option>
+    <option value="germany">Germany</option>
+    <option value="france">France</option>
+  </select>
+</label>
+<br>
+
+<label>
+  Bio:
+  <textarea x-model="bio" placeholder="Write something about yourself"></textarea>
+</label>
+<br>
+
 <p>Hello, {name}. You are {age} years old.</p>
+<p>Gender: {gender}. Country: {country}. Terms Accepted: {termsAccepted}</p>
+<p>Bio: {bio}</p>
 
 <script type="module">
     import { reactive, bindElements } from './src/x.js';
 
     const model = reactive({
-        name: 'Jon',
-        age: 28
+        name: 'Dawid',
+        age: 28,
+        termsAccepted: false,
+        gender: 'male',
+        country: 'poland',
+        bio: 'This is your bio.'
     });
 
     bindElements(model);

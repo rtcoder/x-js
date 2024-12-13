@@ -1,6 +1,6 @@
 function reactive(data) {
     const bindings = new Map(); // Powiązania inputów
-    const textBindings = new Map(); // Powiązania tekstu
+    const textBindings = new Map(); // Powiązania tekstów w DOM
 
     const handler = {
         get(target, key) {
@@ -11,7 +11,15 @@ function reactive(data) {
 
             // Aktualizuj powiązane inputy
             if (bindings.has(key)) {
-                bindings.get(key).forEach((el) => (el.value = value));
+                bindings.get(key).forEach((el) => {
+                    if (el.type === 'checkbox') {
+                        el.checked = value;
+                    } else if (el.type === 'radio') {
+                        el.checked = el.value === value;
+                    } else {
+                        el.value = value;
+                    }
+                });
             }
 
             // Aktualizuj powiązane teksty
@@ -30,12 +38,31 @@ function reactive(data) {
         bindings.get(key).push(element);
 
         // Synchronizacja początkowa
-        element.value = proxy[key];
+        if (element.type === 'checkbox') {
+            element.checked = proxy[key];
+        } else if (element.type === 'radio') {
+            element.checked = element.value === proxy[key];
+        } else {
+            element.value = proxy[key];
+        }
 
         // DOM to model
         element.addEventListener('input', (e) => {
-            proxy[key] = e.target.value;
+            if (element.type === 'checkbox') {
+                proxy[key] = element.checked;
+            } else if (element.type === 'radio') {
+                if (element.checked) proxy[key] = element.value;
+            } else {
+                proxy[key] = element.value;
+            }
         });
+
+        // Obsługa select
+        if (element.tagName === 'SELECT') {
+            element.addEventListener('change', (e) => {
+                proxy[key] = element.value;
+            });
+        }
     };
 
     proxy.bindText = (el) => {
@@ -51,9 +78,7 @@ function reactive(data) {
             // Zarejestruj każdą kluczową właściwość
             matches.forEach((match) => {
                 const key = match.replace(/[{}]/g, '').trim();
-                if (!textBindings.has(key)) {
-                    textBindings.set(key, []);
-                }
+                if (!textBindings.has(key)) textBindings.set(key, []);
                 textBindings.get(key).push(updateText);
             });
 
