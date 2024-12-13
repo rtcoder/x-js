@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test x-if</title>
+</head>
+<body>
+<button x-model="show" type="button">Toggle</button>
+<div x-if="show">This is visible when 'show' is true!</div>
+
+<script type="module">
+    import { reactive, bindElements } from './src/x.js';
+
+    const model = reactive({
+        show: false  // Na początku ukrywamy element
+    });
+
+    // Przełączanie wartości 'show' przy kliknięciu
+    document.querySelector('button').addEventListener('click', () => {
+        model.show = !model.show;  // Zmieniamy wartość 'show' na przeciwną
+    });
+
+    bindElements(model);  // Bindowanie modelu do DOM
+</script>
+</body>
+</html>

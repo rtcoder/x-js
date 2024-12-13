@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dyrektywa x-for Test</title>
+</head>
+<body>
+<ul>
+  <li x-for="person in people">{person}</li>
+</ul>
+
+<script type="module">
+    import { reactive, bindElements } from './src/x.js';
+
+    const model = reactive({
+        people: ['Dawid', 'Anna', 'Jan']
+    });
+
+    bindElements(model);
+</script>
+</body>
+</html>
