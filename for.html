@@ -11,13 +11,11 @@
 </ul>
 
 <script type="module">
-    import { reactive, bindElements } from './src/x.js';
+    import { appX } from './src/x.js';
 
-    const model = reactive({
+    appX({
         people: ['Dawid', 'Anna', 'Jan']
     });
-
-    bindElements(model);
 </script>
 </body>
 </html>

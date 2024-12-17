@@ -10,18 +10,16 @@
 <div x-if="show">This is visible when 'show' is true!</div>
 
 <script type="module">
-    import { reactive, bindElements } from './src/x.js';
+    import { appX } from './src/x.js';
 
-    const model = reactive({
+    appX({
         show: false  // Na początku ukrywamy element
     });
 
     // Przełączanie wartości 'show' przy kliknięciu
-    document.querySelector('button').addEventListener('click', () => {
-        model.show = !model.show;  // Zmieniamy wartość 'show' na przeciwną
-    });
-
-    bindElements(model);  // Bindowanie modelu do DOM
+    // document.querySelector('button').addEventListener('click', () => {
+    //     model.show = !model.show;  // Zmieniamy wartość 'show' na przeciwną
+    // });
 </script>
 </body>
 </html>

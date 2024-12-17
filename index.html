@@ -52,9 +52,9 @@
 <p>Bio: {bio}</p>
 
 <script type="module">
-    import { reactive, bindElements } from './src/x.js';
+    import { appX } from './src/x.js';
 
-    const model = reactive({
+    appX({
         name: 'Dawid',
         age: 28,
         termsAccepted: false,
@@ -62,8 +62,6 @@
         country: 'poland',
         bio: 'This is your bio.'
     });
-
-    bindElements(model);
 </script>
 </body>
 </html>
