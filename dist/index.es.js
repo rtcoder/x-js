@@ -1,116 +1,84 @@
-function E(n, o) {
-  return (t, e) => {
-    o.has(t) || o.set(t, []), o.get(t).push(e), e.type === "checkbox" ? e.checked = n[t] : e.type === "radio" ? e.checked = e.value === n[t] : e.value = n[t], e.addEventListener("input", () => {
-      e.type === "checkbox" ? n[t] = e.checked : e.type === "radio" ? e.checked && (n[t] = e.value) : n[t] = e.value;
-    }), e.tagName === "SELECT" && e.addEventListener("change", () => {
-      n[t] = e.value;
-    });
-  };
+function f(n) {
+  const t = document.createElement(n.type);
+  n.content && (t.textContent = n.content);
+  for (const [e, c] of Object.entries(n.props))
+    if (e.startsWith("on") && typeof c == "function") {
+      const r = e.slice(2).toLowerCase();
+      t.addEventListener(r, c);
+    } else
+      t[e] = c;
+  return n.children.forEach((e) => {
+    const c = typeof e == "string" ? document.createTextNode(e) : f(e);
+    t.appendChild(c);
+  }), t;
 }
-function g(n, o) {
-  return o.split(".").reduce((t, e) => t && t[e], n);
+function d(n, t, e, c = 0) {
+  const r = n.childNodes[c];
+  if (!e) {
+    n.appendChild(f(t));
+    return;
+  }
+  if (!t) {
+    r && n.removeChild(r);
+    return;
+  }
+  if (t.type !== e.type) {
+    n.replaceChild(f(t), r);
+    return;
+  }
+  const o = r;
+  for (const [i, a] of Object.entries(t.props))
+    i.startsWith("on") || o[i] !== a && (o[i] = a);
+  for (const i of Object.keys(e.props))
+    i in t.props || (o[i] = void 0);
+  const s = Math.max(t.children.length, e.children.length);
+  for (let i = 0; i < s; i++)
+    d(o, t.children[i], e.children[i], i);
 }
-function b(n, o, t) {
-  const e = o.split(".");
-  let r = n;
-  for (let i = 0; i < e.length - 1; i++)
-    r = r[e[i]];
-  const s = e[e.length - 1];
-  r && (r[s] = t, n[s] = t), l(n);
-}
-function l(n) {
-  document.querySelectorAll("*").forEach((o) => {
-    o.tagName !== "SCRIPT" && o.childNodes.length === 1 && o.childNodes[0].nodeType === Node.TEXT_NODE && n.bindText(o);
+function y(n) {
+  const t = n.tagName.toLowerCase(), e = {}, c = n.textContent;
+  Array.from(n.attributes).forEach((o) => {
+    e[o.name] = o.value;
   });
+  const r = Array.from(n.childNodes).map((o) => {
+    if (o.nodeType === Node.ELEMENT_NODE)
+      return y(o);
+    if (o.nodeType === Node.TEXT_NODE)
+      return { type: "text", props: { value: o.textContent }, children: [] };
+  }).filter(Boolean);
+  return { type: t, props: e, children: r, content: c };
 }
-function C(n, o) {
-  return (t) => {
-    const e = t.getAttribute("x-model");
-    e ? t.dataset.originalContent = `{${e}}` : t.dataset.originalContent || (t.dataset.originalContent = t.textContent);
-    const r = t.dataset.originalContent, s = r.match(/{\s*[\w.]+\s*}/g);
-    if (s) {
-      const i = () => {
-        t.textContent = r.replace(/{\s*([\w.]+)\s*}/g, (f, a) => g(n, a.trim()) || "");
-      };
-      s.forEach((f) => {
-        const a = f.replace(/[{}]/g, "").trim();
-        o.has(a) || o.set(a, []), o.get(a).push(i);
-      }), i();
-    }
-  };
-}
-function N(n) {
-  const o = /* @__PURE__ */ new Map(), t = /* @__PURE__ */ new Map(), e = {
-    get(s, i) {
-      return Reflect.get(s, i);
-    },
-    set(s, i, f) {
-      const a = Reflect.set(s, i, f);
-      if (o.has(i) && o.get(i).forEach((c) => {
-        c.type === "checkbox" ? c.checked = f : c.type === "radio" ? c.checked = c.value === f : c.value = f;
-      }), t.has(i) && t.get(i).forEach((c) => c()), i.includes(".")) {
-        const c = i.split(".");
-        let d = s;
-        for (let u = 0; u < c.length - 1; u++)
-          d = d[c[u]];
-        const h = c[c.length - 1];
-        d && d.hasOwnProperty(h) && (d[h] = f);
-      }
-      return a;
-    }
-  }, r = new Proxy(n, e);
-  return r.bind = E(r, o), r.bindText = C(r, t), r;
-}
-function T(n, o) {
-  n.querySelectorAll("[x-for]").forEach((t) => {
-    const e = t.getAttribute("x-for"), [r, s] = e.split(" in ").map((a) => a.trim()), i = document.createComment(`x-for="${e}"`);
-    t.parentNode.insertBefore(i, t), t.parentNode.removeChild(t), (() => {
-      const a = o[s] || [];
-      let c = i.nextSibling;
-      for (; c && c.nodeType !== Node.COMMENT_NODE; ) {
-        const d = c;
-        c = d.nextSibling, d.remove();
-      }
-      a.forEach((d) => {
-        var p;
-        const h = N({ [r]: d }), u = t.cloneNode(!0);
-        u.removeAttribute("x-for"), (p = i.parentNode) == null || p.appendChild(u), x(h, i.parentNode);
-      });
-    })();
-  });
-}
-function v(n, o) {
-  n.querySelectorAll("[x-if]").forEach((t) => {
-    const e = t.getAttribute("x-if"), r = document.createComment(`x-if="${e}"`);
-    t.parentNode.insertBefore(r, t), t.parentNode.removeChild(t);
-    const s = () => {
-      var i;
-      o[e] ? t.parentNode || (i = r.parentNode) == null || i.insertBefore(t, r.nextSibling) : t.parentNode && t.parentNode.removeChild(t);
-    };
-    s(), Object.defineProperty(o, e, {
-      get: function() {
-        return this[`_${e}`];
-      },
-      set: function(i) {
-        this[`_${e}`] = i, s();
-      }
+function h(n, t, e) {
+  const c = e.split(".").reduce((r, o) => r[o], t);
+  if (n.tagName === "INPUT") {
+    const r = n;
+    r.value = c, r.addEventListener("input", (o) => {
+      const s = o.target.value, i = e.split("."), a = i.pop(), u = i.reduce((l, p) => l[p], t);
+      u[a] = s, console.log(`Zaktualizowano ${e}:`, t);
     });
-  });
+  }
 }
-function x(n, o = document) {
-  v(o, n), T(o, n), o.querySelectorAll("[x-model]").forEach((t) => {
-    const e = t.getAttribute("x-model"), r = g(n, e);
-    t.tagName === "INPUT" || t.tagName === "TEXTAREA" ? t.value = r || "" : t.textContent = r || "", t.addEventListener("input", (s) => {
-      const i = s.target.value;
-      b(n, e, i);
-    });
-  }), l(n);
+function E(n, t) {
+  const e = n.getAttribute("@click");
+  if (e) {
+    const c = new Function("model", `with(model) { ${e} }`);
+    n.addEventListener("click", () => c(t));
+  }
 }
-function A(n) {
-  const o = N(n);
-  x(o);
+function g(n, t) {
+  const e = document.querySelector(n);
+  function c(r) {
+    const o = r.getAttribute("x-model");
+    o && h(r, t, o), E(r, t), Array.from(r.children).forEach((s) => c(s));
+  }
+  c(e);
 }
 export {
-  A as appX
+  E as bindClick,
+  h as bindXModel,
+  y as createVirtualDOM,
+  g as initializeApp,
+  f as render,
+  d as updateElement
 };
 //# sourceMappingURL=index.es.js.map
