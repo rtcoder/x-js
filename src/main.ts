@@ -176,15 +176,13 @@ function bindPlaceholders(element: HTMLElement, model: any): void {
   // Znajdź wszystkie wyrażenia w formacie { path.to.value }
   const matches = originalText.matchAll(/\{\s*([\w.]+)\s*\}/g);
 
-  // Utwórz mapę powiązań placeholderów z modelem
   const bindings: { path: string; placeholder: string }[] = [];
   for (const match of matches) {
-    const path = match[1].trim(); // Ścieżka do modelu, np. "person.name"
-    const placeholder = match[0]; // Pełny placeholder, np. "{ person.name }"
+    const path = match[1].trim();
+    const placeholder = match[0];
     bindings.push({path, placeholder});
   }
 
-  // Funkcja aktualizująca tekst elementu
   function updateText() {
     let updatedText = originalText;
     for (const {path, placeholder} of bindings) {
@@ -194,7 +192,6 @@ function bindPlaceholders(element: HTMLElement, model: any): void {
     element.textContent = updatedText;
   }
 
-  // Ustaw początkowy tekst
   updateText();
 
   // Przypisz atrybut data-bind-path do śledzenia
@@ -206,23 +203,18 @@ function bindPlaceholders(element: HTMLElement, model: any): void {
 export function initializeApp(selector: string, model: any): void {
   const root = document.querySelector(selector) as HTMLElement;
 
-  // Reaktywność
   const reactiveModel = createReactiveModel(model, (path) => {
     updateHTML(root, reactiveModel, path);
   });
 
-  // Przetwarzanie elementów
   function processElement(element: HTMLElement): void {
-    // Obsługa x-model
     const modelAttr = element.getAttribute('x-model');
     if (modelAttr) {
       bindXModel(element, reactiveModel, modelAttr);
     }
 
-    // Obsługa @click
     bindClick(element, reactiveModel);
 
-    // Obsługa placeholderów w tekście
     if (element.childNodes.length === 1 && element.childNodes[0].nodeType === Node.TEXT_NODE) {
       const textContent = element.textContent || '';
       if (textContent.includes('{') && textContent.includes('}')) {
@@ -230,7 +222,6 @@ export function initializeApp(selector: string, model: any): void {
       }
     }
 
-    // Rekurencyjnie przetwarzaj dzieci
     Array.from(element.children).forEach((child) => processElement(child as HTMLElement));
   }
 
