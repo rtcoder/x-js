@@ -14,7 +14,15 @@
   <p @model="person.name"></p>
   <input @model="person.name" type="text"/>
   <input @model="person.address.city" type="text"/>
-  <button @click="person.address.city = '20002'" id="o">Change ZIP</button>
+  <button @click="person.address.zip = '20002'" id="o">Change ZIP</button>
+  <button @click="person.address.zip = 2" >Change ZIP = 2</button>
+  <button @click="person.address.zip = 4" >Change ZIP = 4</button>
+  <div @if="person.address.zip === 4">
+    <p>val is 4</p>
+  </div>
+  <div @if="person.address.zip === 2">
+    <p>val is 2</p>
+  </div>
 </div>
 
 <script type="module">

@@ -1,6 +1,91 @@
-import {VNode} from './types/v-node.ts';
-import {XInstanceData} from './types/x-instance-data.ts';
-import {createVirtualDOM} from './virtual-dom.ts';
+type MixedObject = {
+  [key: string]: any;
+}
+type XInstanceData = {
+  container: HTMLElement | string;
+  data: MixedObject;
+  methods?: MixedObject;
+}
+type Binding = {
+  path: string,
+  placeholder: string,
+};
+type Bindings = Binding[];
+type VNode = {
+  type: string;
+  props: MixedObject;
+  content: string | null;
+  children: VNode[];
+  element: HTMLElement;
+  bindPathList: Bindings;
+}
+const MODEL_PROP = '@model';
+const CLICK_PROP = '@click';
+const IF_PROP = '@if';
+
+function getBindings(element: HTMLElement): Bindings {
+  const textBindings = getBindingsForText(element.textContent);
+  if (element.nodeType === Node.TEXT_NODE) {
+    return textBindings;
+  }
+  const attributeBindings = [];
+  const xModel = element.getAttribute(MODEL_PROP);
+  if (xModel) {
+    attributeBindings.push({path: xModel, placeholder: xModel});
+  }
+  return [...textBindings, ...attributeBindings];
+}
+
+function getBindingsForText(content: string | null): Bindings {
+  if (!content) {
+    return [];
+  }
+  const matches = Array.from(content.matchAll(/\{\s*([\w.]+)\s*\}/g));
+  return matches.map((match) => ({
+    path: match[1].trim(),
+    placeholder: match[0],
+  }));
+}
+
+function getChildren(element: HTMLElement): VNode[] {
+  return Array.from(element.childNodes).map((child) => {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      return createVirtualDOM(child as HTMLElement);
+    } else if (child.nodeType === Node.TEXT_NODE) {
+      return {
+        type: 'text',
+        content: child.textContent,
+        props: {},
+        children: [],
+        element: child,
+        bindPathList: getBindingsForText(child.textContent),
+      };
+    } else if (child.nodeType === Node.COMMENT_NODE) {
+      return {
+        type: 'comment',
+        content: child.textContent,
+        props: {},
+        children: [],
+        element: child,
+        bindPathList: getBindingsForText(child.textContent),
+      };
+    }
+  }).filter(Boolean) as VNode[];
+}
+
+ function createVirtualDOM(element: HTMLElement): VNode {
+  const type = element.tagName.toLowerCase();
+  const props: MixedObject = {};
+  const content = element.textContent;
+
+  Array.from(element.attributes).forEach((attr) => {
+    props[attr.name] = attr.value;
+  });
+
+  const children = getChildren(element);
+  const bindings = element.childNodes.length ? [] : getBindings(element);
+  return {type, props, children, content, element, bindPathList: bindings};
+}
 
 function createReactiveModel(model: any, onChange: (path: string) => void): any {
   function createProxy(obj: any, path: string[] = []): any {
@@ -26,10 +111,21 @@ function createReactiveModel(model: any, onChange: (path: string) => void): any 
 
 function updateHTML(root: HTMLElement, vDom: VNode, model: any, path: string): void {
   vDom.children.forEach((childVNode, index) => {
+    if (childVNode.props[IF_PROP]) {
+      const condition = childVNode.props[IF_PROP];
+      const isVisible = new Function('model', `with(model) { return ${condition}; }`)(model);
+
+      if (!isVisible) {
+        childVNode.element.style.display = 'none';
+        return;
+      } else {
+        childVNode.element.style.display = '';
+      }
+    }
     if (childVNode.children.length) {
       updateHTML(root, childVNode, model, path);
     }
-    if (childVNode.props['@model'] === path) {
+    if (childVNode.props[MODEL_PROP] === path) {
       const value = path.split('.').reduce((obj, key) => obj[key], model);
       if (childVNode.element.tagName === 'INPUT') {
         const input = childVNode.element as HTMLInputElement;
@@ -80,13 +176,10 @@ function bindXModel(element: HTMLElement, model: any, path: string): void {
     console.log({target});
     element.textContent = target;
   }
-
-  // Dodaj atrybut do identyfikacji elementu podczas aktualizacji
-  element.setAttribute('data-bind-path', path);
 }
 
 function bindClick(element: HTMLElement, model: any): void {
-  const clickHandler = element.getAttribute('@click');
+  const clickHandler = element.getAttribute(CLICK_PROP);
   if (clickHandler) {
     const fn = new Function('model', `with(model) { ${clickHandler} }`);
     element.addEventListener('click', () => fn(model));
@@ -142,11 +235,24 @@ export function initializeAppWithVirtualDOM(instanceData: XInstanceData): void {
   });
 
   function processVNode(vNode: VNode, parentElement: HTMLElement): void {
-    if (vNode.props['@model']) {
-      bindXModel(parentElement, reactiveModel, vNode.props['@model']);
+    const {props, element} = vNode;
+    // Obsługa @if
+    if (props[IF_PROP]) {
+      const condition = props[IF_PROP];
+      const isVisible = new Function('model', `with(model) { return ${condition}; }`)(model);
+
+      if (!isVisible) {
+        element.style.display = 'none';
+        return;
+      } else {
+        element.style.display = '';
+      }
+    }
+    if (props[MODEL_PROP]) {
+      bindXModel(parentElement, reactiveModel, props[MODEL_PROP]);
     }
 
-    if (vNode.props['@click']) {
+    if (props[CLICK_PROP]) {
       bindClick(parentElement, reactiveModel);
     }
 
@@ -154,11 +260,14 @@ export function initializeAppWithVirtualDOM(instanceData: XInstanceData): void {
 
     vNode.children.forEach((childVNode, index) => {
       if (typeof childVNode === 'object') {
+        console.log(parentElement)
         const childElement = parentElement.childNodes[index] as HTMLElement;
+        console.log(childElement,childVNode);
         processVNode(childVNode, childElement);
       }
     });
   }
+
 
   processVNode(virtualDOM, root);
 }
