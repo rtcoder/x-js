@@ -1,4 +1,4 @@
-import {getBindings} from './bindings.ts';
+import {getBindings, getBindingsForText} from './bindings.ts';
 import {MixedObject} from './types/mixed-object.ts';
 import {VNode} from './types/v-node.ts';
 
@@ -13,7 +13,7 @@ function getChildren(element: HTMLElement): VNode[] {
         props: {},
         children: [],
         element: child,
-        bindPathList: getBindings(child.textContent),
+        bindPathList: getBindingsForText(child.textContent),
       };
     }
   }).filter(Boolean) as VNode[];
@@ -29,6 +29,6 @@ export function createVirtualDOM(element: HTMLElement): VNode {
   });
 
   const children = getChildren(element);
-  const bindings = element.childNodes.length ? [] : getBindings(content);
+  const bindings = element.childNodes.length ? [] : getBindings(element);
   return {type, props, children, content, element, bindPathList: bindings};
 }

@@ -1,121 +1,129 @@
-function d(n) {
-  return n ? Array.from(n.matchAll(/\{\s*([\w.]+)\s*\}/g)).map((r) => ({
-    path: r[1].trim(),
-    placeholder: r[0]
+function E(t) {
+  const e = p(t.textContent);
+  if (t.nodeType === Node.TEXT_NODE)
+    return e;
+  const o = [], i = t.getAttribute("x-model");
+  return i && o.push({ path: i, placeholder: i }), [...e, ...o];
+}
+function p(t) {
+  return t ? Array.from(t.matchAll(/\{\s*([\w.]+)\s*\}/g)).map((o) => ({
+    path: o[1].trim(),
+    placeholder: o[0]
   })) : [];
 }
-function y(n) {
-  return Array.from(n.childNodes).map((i) => {
-    if (i.nodeType === Node.ELEMENT_NODE)
-      return g(i);
-    if (i.nodeType === Node.TEXT_NODE)
+function T(t) {
+  return Array.from(t.childNodes).map((e) => {
+    if (e.nodeType === Node.ELEMENT_NODE)
+      return d(e);
+    if (e.nodeType === Node.TEXT_NODE)
       return {
         type: "text",
-        content: i.textContent,
+        content: e.textContent,
         props: {},
         children: [],
-        element: i,
-        bindPathList: d(i.textContent)
+        element: e,
+        bindPathList: p(e.textContent)
       };
   }).filter(Boolean);
 }
-function g(n) {
-  const i = n.tagName.toLowerCase(), r = {}, o = n.textContent;
-  Array.from(n.attributes).forEach((t) => {
-    r[t.name] = t.value;
+function d(t) {
+  const e = t.tagName.toLowerCase(), o = {}, i = t.textContent;
+  Array.from(t.attributes).forEach((c) => {
+    o[c.name] = c.value;
   });
-  const a = y(n), e = n.childNodes.length ? [] : d(o);
-  return { type: i, props: r, children: a, content: o, element: n, bindPathList: e };
+  const n = T(t), s = t.childNodes.length ? [] : E(t);
+  return { type: e, props: o, children: n, content: i, element: t, bindPathList: s };
 }
-function h(n, i) {
-  function r(o, a = []) {
-    return new Proxy(o, {
-      get(e, t) {
-        const c = e[t];
-        return typeof c == "object" && c !== null ? r(c, [...a, t]) : c;
+function g(t, e) {
+  function o(i, n = []) {
+    return new Proxy(i, {
+      get(s, c) {
+        const r = s[c];
+        return typeof r == "object" && r !== null ? o(r, [...n, c]) : r;
       },
-      set(e, t, c) {
-        return console.log("Model changed at:", [...a, t].join("."), "New value:", c), e[t] = c, i([...a, t].join(".")), !0;
+      set(s, c, r) {
+        return console.log("Model changed at:", [...n, c].join("."), "New value:", r), s[c] = r, e([...n, c].join(".")), !0;
       }
     });
   }
-  return r(n);
+  return o(t);
 }
-function b(n, i, r, o) {
-  i.children.forEach((e, t) => {
-    if (e.children.length && b(n, e, r, o), !e.bindPathList.length || !e.bindPathList.filter((u) => u.path === o).length)
+function x(t, e, o, i) {
+  e.children.forEach((n, s) => {
+    if (n.children.length && x(t, n, o, i), n.props["x-model"] === i) {
+      const a = i.split(".").reduce((u, l) => u[l], o);
+      if (n.element.tagName === "INPUT") {
+        const u = n.element;
+        u.value !== a && (u.value = a);
+      } else
+        n.element.textContent = a;
       return;
-    let s = e.content || "";
-    e.bindPathList.forEach((u) => {
-      const l = u.path.split(".").reduce((f, p) => f[p], r);
-      s = s.replace(u.placeholder, l ?? "");
-    }), e.element.textContent = s;
-  }), n.querySelectorAll(`[data-bind-path="${o}"]`).forEach((e) => {
-    if (e.tagName === "INPUT") {
-      const t = e, c = o.split(".").reduce((s, u) => s[u], r);
-      t.value !== c && (t.value = c);
-    } else {
-      const t = o.split(".").reduce((s, u) => s[u], r), c = e.getAttribute("data-original-text") || e.textContent || "";
-      e.textContent = c.replace(`{${o}}`, t ?? "");
     }
+    if (!n.bindPathList.length || !n.bindPathList.filter((a) => a.path === i).length)
+      return;
+    let r = n.content || "";
+    n.bindPathList.forEach((a) => {
+      const u = a.path.split(".").reduce((l, f) => l[f], o);
+      r = r.replace(a.placeholder, u ?? "");
+    }), n.element.textContent = r;
   });
 }
-function T(n, i, r) {
-  const o = r.split(".").reduce((a, e) => a[e], i);
-  if (n.tagName === "INPUT") {
-    const a = n;
-    a.value = o, a.addEventListener("input", (e) => {
-      const t = e.target.value, c = r.split("."), s = c.pop(), u = c.reduce((l, f) => l[f], i);
-      u[s] = t;
+function y(t, e, o) {
+  const i = o.split(".").reduce((n, s) => n[s], e);
+  if (t.tagName === "INPUT") {
+    const n = t;
+    n.value = i, n.addEventListener("input", (s) => {
+      const c = s.target.value, r = o.split("."), a = r.pop(), u = r.reduce((l, f) => l[f], e);
+      u[a] = c;
     });
   } else
-    n.textContent = o;
-  n.setAttribute("data-bind-path", r);
+    console.log({ target: i }), t.textContent = i;
+  t.setAttribute("data-bind-path", o);
 }
-function C(n, i) {
-  const r = n.getAttribute("@click");
-  if (r) {
-    const o = new Function("model", `with(model) { ${r} }`);
-    n.addEventListener("click", () => o(i));
+function C(t, e) {
+  const o = t.getAttribute("@click");
+  if (o) {
+    const i = new Function("model", `with(model) { ${o} }`);
+    t.addEventListener("click", () => i(e));
   }
 }
-function x(n, i, r) {
-  const { content: o, props: a, element: e } = n;
-  if (console.log("element", e), o && o.includes("{") && o.includes("}") && e.nodeType === Node.TEXT_NODE) {
-    const t = d(o), c = () => {
-      let s = o;
-      t.forEach(({ path: u, placeholder: l }) => {
-        const f = u.split(".").reduce((p, E) => p[E], i);
-        s = s.replace(l, f ?? "");
-      }), e.textContent = s;
+function h(t, e) {
+  const { content: o, props: i, element: n, bindPathList: s } = t;
+  if (console.log("element", n), o && o.includes("{") && o.includes("}") && n.nodeType === Node.TEXT_NODE) {
+    const c = () => {
+      let r = o;
+      s.forEach(({ path: a, placeholder: u }) => {
+        const l = a.split(".").reduce((f, b) => f[b], e);
+        r = r.replace(u, l ?? "");
+      }), n.textContent = r;
     };
-    c(), t.forEach(({ path: s }) => {
-      h(i, (u) => {
-        u.startsWith(s.split(".")[0]) && c();
+    c(), s.forEach(({ path: r }) => {
+      g(e, (a) => {
+        a.startsWith(r.split(".")[0]) && c();
       });
     });
   }
-  n.children.forEach((t) => {
-    typeof t == "object" && x(t, i);
+  t.children.forEach((c) => {
+    typeof c == "object" && h(c, e);
   });
 }
-function v(n, i) {
-  const r = document.querySelector(n), o = g(r);
-  console.log(o);
-  const a = h(i, (t) => {
-    b(r, o, a, t);
+function L(t) {
+  const { container: e, data: o } = t, i = typeof e == "string" ? document.querySelector(e) : e, n = d(i);
+  console.log(n);
+  const s = g(o, (r) => {
+    x(i, n, s, r);
   });
-  function e(t, c) {
-    t.props["x-model"] && T(c, a, t.props["x-model"]), t.props["@click"] && C(c, a), x(t, a), t.children.forEach((s, u) => {
-      if (typeof s == "object") {
-        const l = c.childNodes[u];
-        e(s, l);
+  function c(r, a) {
+    r.props["x-model"] && y(a, s, r.props["x-model"]), r.props["@click"] && C(a, s), h(r, s), r.children.forEach((u, l) => {
+      if (typeof u == "object") {
+        const f = a.childNodes[l];
+        c(u, f);
       }
     });
   }
-  e(o, r);
+  c(n, i);
 }
 export {
-  v as initializeAppWithVirtualDOM
+  L as initializeAppWithVirtualDOM
 };
 //# sourceMappingURL=index.es.js.map

@@ -4,7 +4,19 @@ export type Binding = {
 };
 export type Bindings = Binding[];
 
-export function getBindings(content: string | null): Bindings {
+export function getBindings(element:HTMLElement): Bindings {
+  const textBindings = getBindingsForText(element.textContent);
+  if(element.nodeType === Node.TEXT_NODE) {
+    return textBindings;
+  }
+  const attributeBindings=[];
+  const xModel = element.getAttribute('x-model');
+  if(xModel) {
+    attributeBindings.push({path: xModel, placeholder: xModel});
+  }
+  return [...textBindings, ...attributeBindings];
+}
+export function getBindingsForText(content: string | null): Bindings {
   if (!content) {
     return [];
   }

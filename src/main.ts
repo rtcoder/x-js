@@ -1,5 +1,5 @@
-import {getBindings} from './bindings.ts';
 import {VNode} from './types/v-node.ts';
+import {XInstanceData} from './types/x-instance-data.ts';
 import {createVirtualDOM} from './virtual-dom.ts';
 
 function createReactiveModel(model: any, onChange: (path: string) => void): any {
@@ -29,7 +29,18 @@ function updateHTML(root: HTMLElement, vDom: VNode, model: any, path: string): v
     if (childVNode.children.length) {
       updateHTML(root, childVNode, model, path);
     }
-
+    if (childVNode.props['x-model'] === path) {
+      const value = path.split('.').reduce((obj, key) => obj[key], model);
+      if (childVNode.element.tagName === 'INPUT') {
+        const input = childVNode.element as HTMLInputElement;
+        if (input.value !== value) {
+          input.value = value;
+        }
+      } else {
+        childVNode.element.textContent = value;
+      }
+      return;
+    }
     if (!childVNode.bindPathList.length) {
       return;
     }
@@ -44,23 +55,6 @@ function updateHTML(root: HTMLElement, vDom: VNode, model: any, path: string): v
       newContent = newContent!.replace(binding.placeholder, value ?? '');
     });
     childVNode.element.textContent = newContent;
-  });
-
-
-  const elements = root.querySelectorAll(`[data-bind-path="${path}"]`);
-
-  elements.forEach((element) => {
-    if (element.tagName === 'INPUT') {
-      const input = element as HTMLInputElement;
-      const value = path.split('.').reduce((obj, key) => obj[key], model);
-      if (input.value !== value) {
-        input.value = value;
-      }
-    } else {
-      const value = path.split('.').reduce((obj, key) => obj[key], model);
-      const originalText = element.getAttribute('data-original-text') || element.textContent || '';
-      element.textContent = originalText.replace(`{${path}}`, value ?? '');
-    }
   });
 }
 
@@ -83,6 +77,7 @@ function bindXModel(element: HTMLElement, model: any, path: string): void {
     });
   } else {
     // Ustaw tekst początkowy
+    console.log({target});
     element.textContent = target;
   }
 
@@ -98,15 +93,14 @@ function bindClick(element: HTMLElement, model: any): void {
   }
 }
 
-function bindPlaceholdersUsingVirtualDOM(vNode: VNode, model: any, root: HTMLElement): void {
-  const {content, props, element} = vNode;
+function bindPlaceholdersUsingVirtualDOM(vNode: VNode, model: any): void {
+  const {content, props, element, bindPathList} = vNode;
   console.log('element', element);
   if (content && content.includes('{') && content.includes('}') && element.nodeType === Node.TEXT_NODE) {
-    const bindings = getBindings(content);
 
     const updateText = () => {
       let updatedText = content;
-      bindings.forEach(({path, placeholder}) => {
+      bindPathList.forEach(({path, placeholder}) => {
         const value = path.split('.').reduce((obj, key) => obj[key], model);
         updatedText = updatedText.replace(placeholder, value ?? '');
       });
@@ -116,7 +110,7 @@ function bindPlaceholdersUsingVirtualDOM(vNode: VNode, model: any, root: HTMLEle
     updateText();
 
     // Odświeżanie tekstu na zmianę modelu
-    bindings.forEach(({path}) => {
+    bindPathList.forEach(({path}) => {
       createReactiveModel(model, (updatedPath) => {
         if (updatedPath.startsWith(path.split('.')[0])) {
           updateText();
@@ -128,16 +122,21 @@ function bindPlaceholdersUsingVirtualDOM(vNode: VNode, model: any, root: HTMLEle
   // Przetwarzaj dzieci rekurencyjnie
   vNode.children.forEach((childVNode) => {
     if (typeof childVNode === 'object') {
-      bindPlaceholdersUsingVirtualDOM(childVNode, model, root);
+      bindPlaceholdersUsingVirtualDOM(childVNode, model);
     }
   });
 }
 
+export function initializeAppWithVirtualDOM(instanceData: XInstanceData): void {
+  const {container, data: model} = instanceData;
+  const root = typeof container === 'string'
+    ? document.querySelector(container) as HTMLElement
+    : container;
 
-export function initializeAppWithVirtualDOM(selector: string, model: any): void {
-  const root = document.querySelector(selector) as HTMLElement;
   const virtualDOM = createVirtualDOM(root);
+
   console.log(virtualDOM);
+
   const reactiveModel = createReactiveModel(model, (path) => {
     updateHTML(root, virtualDOM, reactiveModel, path);
   });
@@ -151,7 +150,7 @@ export function initializeAppWithVirtualDOM(selector: string, model: any): void 
       bindClick(parentElement, reactiveModel);
     }
 
-    bindPlaceholdersUsingVirtualDOM(vNode, reactiveModel, root);
+    bindPlaceholdersUsingVirtualDOM(vNode, reactiveModel);
 
     vNode.children.forEach((childVNode, index) => {
       if (typeof childVNode === 'object') {
