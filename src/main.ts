@@ -20,10 +20,9 @@ function createReactiveModel(model: any, onChange: (path: string) => void): any 
 
   return createProxy(model);
 }
+
 function updateHTML(root: HTMLElement, model: any, path: string): void {
-  const elements = [
-      ...root.querySelectorAll(`[data-bind-path="${path}"]`).values(),
-  ];
+  const elements = root.querySelectorAll(`[data-bind-path="${path}"]`);
 
   elements.forEach((element) => {
     if (element.tagName === 'INPUT') {
@@ -33,8 +32,8 @@ function updateHTML(root: HTMLElement, model: any, path: string): void {
         input.value = value;
       }
     } else {
-      const textContent = element.textContent || '';
-      if (textContent.includes('{') && textContent.includes('}')) {
+      const originalText = element.textContent || '';
+      if (originalText.includes('{') && originalText.includes('}')) {
         bindPlaceholders(element as HTMLElement, model);
       } else {
         element.textContent = path.split('.').reduce((obj, key) => obj[key], model);
@@ -43,8 +42,7 @@ function updateHTML(root: HTMLElement, model: any, path: string): void {
   });
 }
 
-
-export function render(vNode: VNode): HTMLElement {
+function render(vNode: VNode): HTMLElement {
   const element = document.createElement(vNode.type);
   if (vNode.content) {
     element.textContent = vNode.content;
@@ -70,7 +68,7 @@ export function render(vNode: VNode): HTMLElement {
   return element;
 }
 
-export function updateElement(parent: HTMLElement, newVNode: VNode, oldVNode?: VNode, index = 0): void {
+function updateElement(parent: HTMLElement, newVNode: VNode, oldVNode?: VNode, index = 0): void {
   const child = parent.childNodes[index];
 
   // Jeśli stary węzeł nie istnieje, dodaj nowy
@@ -117,7 +115,7 @@ export function updateElement(parent: HTMLElement, newVNode: VNode, oldVNode?: V
   }
 }
 
-export function createVirtualDOM(element: HTMLElement): VNode {
+function createVirtualDOM(element: HTMLElement): VNode {
   const type = element.tagName.toLowerCase();
   const props: { [key: string]: any } = {};
   const content = element.textContent;
@@ -164,13 +162,14 @@ function bindXModel(element: HTMLElement, model: any, path: string): void {
   element.setAttribute('data-bind-path', path);
 }
 
-export function bindClick(element: HTMLElement, model: any): void {
+function bindClick(element: HTMLElement, model: any): void {
   const clickHandler = element.getAttribute('@click');
   if (clickHandler) {
     const fn = new Function('model', `with(model) { ${clickHandler} }`);
     element.addEventListener('click', () => fn(model));
   }
 }
+
 function bindPlaceholders(element: HTMLElement, model: any): void {
   const originalText = element.textContent || '';
 
@@ -182,13 +181,13 @@ function bindPlaceholders(element: HTMLElement, model: any): void {
   for (const match of matches) {
     const path = match[1].trim(); // Ścieżka do modelu, np. "person.name"
     const placeholder = match[0]; // Pełny placeholder, np. "{ person.name }"
-    bindings.push({ path, placeholder });
+    bindings.push({path, placeholder});
   }
 
   // Funkcja aktualizująca tekst elementu
   function updateText() {
     let updatedText = originalText;
-    for (const { path, placeholder } of bindings) {
+    for (const {path, placeholder} of bindings) {
       const value = path.split('.').reduce((obj, key) => obj[key], model);
       updatedText = updatedText.replace(placeholder, value ?? '');
     }
@@ -198,14 +197,11 @@ function bindPlaceholders(element: HTMLElement, model: any): void {
   // Ustaw początkowy tekst
   updateText();
 
-  // Reaktywność: aktualizuj tekst przy zmianie modelu
-  createReactiveModel(model, (updatedPath) => {
-    if (bindings.some(({ path }) => updatedPath.startsWith(path.split('.')[0]))) {
-      updateText();
-    }
+  // Przypisz atrybut data-bind-path do śledzenia
+  bindings.forEach(({path}) => {
+    element.setAttribute('data-bind-path', path);
   });
 }
-
 
 export function initializeApp(selector: string, model: any): void {
   const root = document.querySelector(selector) as HTMLElement;
@@ -238,7 +234,5 @@ export function initializeApp(selector: string, model: any): void {
     Array.from(element.children).forEach((child) => processElement(child as HTMLElement));
   }
 
-
   processElement(root);
 }
-

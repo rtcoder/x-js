@@ -1,136 +1,80 @@
-function d(o, c) {
-  function n(s, r = []) {
-    return new Proxy(s, {
-      get(t, i) {
-        const e = t[i];
-        return typeof e == "object" && e !== null ? n(e, [...r, i]) : e;
+function p(i, s) {
+  function c(r, o = []) {
+    return new Proxy(r, {
+      get(t, n) {
+        const e = t[n];
+        return typeof e == "object" && e !== null ? c(e, [...o, n]) : e;
       },
-      set(t, i, e) {
-        return t[i] = e, c([...r, i].join(".")), !0;
+      set(t, n, e) {
+        return t[n] = e, s([...o, n].join(".")), !0;
       }
     });
   }
-  return n(o);
+  return c(i);
 }
-function y(o, c, n) {
-  [
-    ...o.querySelectorAll(`[data-bind-path="${n}"]`).values()
-  ].forEach((r) => {
-    if (r.tagName === "INPUT") {
-      const t = r, i = n.split(".").reduce((e, a) => e[a], c);
-      t.value !== i && (t.value = i);
+function h(i, s, c) {
+  i.querySelectorAll(`[data-bind-path="${c}"]`).forEach((o) => {
+    if (o.tagName === "INPUT") {
+      const t = o, n = c.split(".").reduce((e, u) => e[u], s);
+      t.value !== n && (t.value = n);
     } else {
-      const t = r.textContent || "";
-      t.includes("{") && t.includes("}") ? h(r, c) : r.textContent = n.split(".").reduce((i, e) => i[e], c);
+      const t = o.textContent || "";
+      t.includes("{") && t.includes("}") ? f(o, s) : o.textContent = c.split(".").reduce((n, e) => n[e], s);
     }
   });
 }
-function p(o) {
-  const c = document.createElement(o.type);
-  o.content && (c.textContent = o.content);
-  for (const [n, s] of Object.entries(o.props))
-    if (n.startsWith("on") && typeof s == "function") {
-      const r = n.slice(2).toLowerCase();
-      c.addEventListener(r, s);
-    } else
-      c[n] = s;
-  return o.children.forEach((n) => {
-    const s = typeof n == "string" ? document.createTextNode(n) : p(n);
-    c.appendChild(s);
-  }), c;
-}
-function x(o, c, n, s = 0) {
-  const r = o.childNodes[s];
-  if (!n) {
-    o.appendChild(p(c));
-    return;
-  }
-  if (!c) {
-    r && o.removeChild(r);
-    return;
-  }
-  if (c.type !== n.type) {
-    o.replaceChild(p(c), r);
-    return;
-  }
-  const t = r;
-  for (const [e, a] of Object.entries(c.props))
-    e.startsWith("on") || t[e] !== a && (t[e] = a);
-  for (const e of Object.keys(n.props))
-    e in c.props || (t[e] = void 0);
-  const i = Math.max(c.children.length, n.children.length);
-  for (let e = 0; e < i; e++)
-    x(t, c.children[e], n.children[e], e);
-}
-function E(o) {
-  const c = o.tagName.toLowerCase(), n = {}, s = o.textContent;
-  Array.from(o.attributes).forEach((t) => {
-    n[t.name] = t.value;
-  });
-  const r = Array.from(o.childNodes).map((t) => {
-    if (t.nodeType === Node.ELEMENT_NODE)
-      return E(t);
-    if (t.nodeType === Node.TEXT_NODE)
-      return { type: "text", props: { value: t.textContent }, children: [] };
-  }).filter(Boolean);
-  return { type: c, props: n, children: r, content: s };
-}
-function C(o, c, n) {
-  const s = n.split(".").reduce((r, t) => r[t], c);
-  if (o.tagName === "INPUT") {
-    const r = o;
-    r.value = s, r.addEventListener("input", (t) => {
-      const i = t.target.value, e = n.split("."), a = e.pop(), u = e.reduce((l, f) => l[f], c);
-      u[a] = i;
+function x(i, s, c) {
+  const r = c.split(".").reduce((o, t) => o[t], s);
+  if (i.tagName === "INPUT") {
+    const o = i;
+    o.value = r, o.addEventListener("input", (t) => {
+      const n = t.target.value, e = c.split("."), u = e.pop(), a = e.reduce((d, l) => d[l], s);
+      a[u] = n;
     });
   } else
-    o.textContent = s;
-  o.setAttribute("data-bind-path", n);
+    i.textContent = r;
+  i.setAttribute("data-bind-path", c);
 }
-function g(o, c) {
-  const n = o.getAttribute("@click");
-  if (n) {
-    const s = new Function("model", `with(model) { ${n} }`);
-    o.addEventListener("click", () => s(c));
+function b(i, s) {
+  const c = i.getAttribute("@click");
+  if (c) {
+    const r = new Function("model", `with(model) { ${c} }`);
+    i.addEventListener("click", () => r(s));
   }
 }
-function h(o, c) {
-  const n = o.textContent || "", s = n.matchAll(/\{\s*([\w.]+)\s*\}/g), r = [];
-  for (const i of s) {
-    const e = i[1].trim(), a = i[0];
-    r.push({ path: e, placeholder: a });
+function f(i, s) {
+  const c = i.textContent || "", r = c.matchAll(/\{\s*([\w.]+)\s*\}/g), o = [];
+  for (const n of r) {
+    const e = n[1].trim(), u = n[0];
+    o.push({ path: e, placeholder: u });
   }
   function t() {
-    let i = n;
-    for (const { path: e, placeholder: a } of r) {
-      const u = e.split(".").reduce((l, f) => l[f], c);
-      i = i.replace(a, u ?? "");
+    let n = c;
+    for (const { path: e, placeholder: u } of o) {
+      const a = e.split(".").reduce((d, l) => d[l], s);
+      n = n.replace(u, a ?? "");
     }
-    o.textContent = i;
+    i.textContent = n;
   }
-  t(), d(c, (i) => {
-    r.some(({ path: e }) => i.startsWith(e.split(".")[0])) && t();
+  t(), o.forEach(({ path: n }) => {
+    i.setAttribute("data-bind-path", n);
   });
 }
-function v(o, c) {
-  const n = document.querySelector(o), s = d(c, (t) => {
-    y(n, s, t);
+function g(i, s) {
+  const c = document.querySelector(i), r = p(s, (t) => {
+    h(c, r, t);
   });
-  function r(t) {
-    const i = t.getAttribute("x-model");
-    if (i && C(t, s, i), g(t, s), t.childNodes.length === 1 && t.childNodes[0].nodeType === Node.TEXT_NODE) {
+  function o(t) {
+    const n = t.getAttribute("x-model");
+    if (n && x(t, r, n), b(t, r), t.childNodes.length === 1 && t.childNodes[0].nodeType === Node.TEXT_NODE) {
       const e = t.textContent || "";
-      e.includes("{") && e.includes("}") && h(t, s);
+      e.includes("{") && e.includes("}") && f(t, r);
     }
-    Array.from(t.children).forEach((e) => r(e));
+    Array.from(t.children).forEach((e) => o(e));
   }
-  r(n);
+  o(c);
 }
 export {
-  g as bindClick,
-  E as createVirtualDOM,
-  v as initializeApp,
-  p as render,
-  x as updateElement
+  g as initializeApp
 };
 //# sourceMappingURL=index.es.js.map
