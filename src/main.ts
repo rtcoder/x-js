@@ -29,7 +29,7 @@ function updateHTML(root: HTMLElement, vDom: VNode, model: any, path: string): v
     if (childVNode.children.length) {
       updateHTML(root, childVNode, model, path);
     }
-    if (childVNode.props['x-model'] === path) {
+    if (childVNode.props['@model'] === path) {
       const value = path.split('.').reduce((obj, key) => obj[key], model);
       if (childVNode.element.tagName === 'INPUT') {
         const input = childVNode.element as HTMLInputElement;
@@ -142,8 +142,8 @@ export function initializeAppWithVirtualDOM(instanceData: XInstanceData): void {
   });
 
   function processVNode(vNode: VNode, parentElement: HTMLElement): void {
-    if (vNode.props['x-model']) {
-      bindXModel(parentElement, reactiveModel, vNode.props['x-model']);
+    if (vNode.props['@model']) {
+      bindXModel(parentElement, reactiveModel, vNode.props['@model']);
     }
 
     if (vNode.props['@click']) {

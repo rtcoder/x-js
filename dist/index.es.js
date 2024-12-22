@@ -2,7 +2,7 @@ function E(t) {
   const e = p(t.textContent);
   if (t.nodeType === Node.TEXT_NODE)
     return e;
-  const o = [], i = t.getAttribute("x-model");
+  const o = [], i = t.getAttribute("@model");
   return i && o.push({ path: i, placeholder: i }), [...e, ...o];
 }
 function p(t) {
@@ -50,7 +50,7 @@ function g(t, e) {
 }
 function x(t, e, o, i) {
   e.children.forEach((n, s) => {
-    if (n.children.length && x(t, n, o, i), n.props["x-model"] === i) {
+    if (n.children.length && x(t, n, o, i), n.props["@model"] === i) {
       const a = i.split(".").reduce((u, l) => u[l], o);
       if (n.element.tagName === "INPUT") {
         const u = n.element;
@@ -114,7 +114,7 @@ function L(t) {
     x(i, n, s, r);
   });
   function c(r, a) {
-    r.props["x-model"] && y(a, s, r.props["x-model"]), r.props["@click"] && C(a, s), h(r, s), r.children.forEach((u, l) => {
+    r.props["@model"] && y(a, s, r.props["@model"]), r.props["@click"] && C(a, s), h(r, s), r.children.forEach((u, l) => {
       if (typeof u == "object") {
         const f = a.childNodes[l];
         c(u, f);

@@ -10,7 +10,7 @@ export function getBindings(element:HTMLElement): Bindings {
     return textBindings;
   }
   const attributeBindings=[];
-  const xModel = element.getAttribute('x-model');
+  const xModel = element.getAttribute('@model');
   if(xModel) {
     attributeBindings.push({path: xModel, placeholder: xModel});
   }

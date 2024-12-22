@@ -11,10 +11,9 @@
 <div id="app">
   { person.address.city } {person.address.zip}
   <p>{ person.name }</p>c
-  <p x-model="person.name"></p>
-  <input x-model="person.name" type="text"/>
-  <input x-model="person.name" type="text"/>
-  <input x-model="person.address.city" type="text"/>
+  <p @model="person.name"></p>
+  <input @model="person.name" type="text"/>
+  <input @model="person.address.city" type="text"/>
   <button @click="person.address.city = '20002'" id="o">Change ZIP</button>
 </div>
 
