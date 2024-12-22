@@ -1,84 +1,136 @@
-function f(n) {
-  const t = document.createElement(n.type);
-  n.content && (t.textContent = n.content);
-  for (const [e, c] of Object.entries(n.props))
-    if (e.startsWith("on") && typeof c == "function") {
-      const r = e.slice(2).toLowerCase();
-      t.addEventListener(r, c);
-    } else
-      t[e] = c;
-  return n.children.forEach((e) => {
-    const c = typeof e == "string" ? document.createTextNode(e) : f(e);
-    t.appendChild(c);
-  }), t;
-}
-function d(n, t, e, c = 0) {
-  const r = n.childNodes[c];
-  if (!e) {
-    n.appendChild(f(t));
-    return;
-  }
-  if (!t) {
-    r && n.removeChild(r);
-    return;
-  }
-  if (t.type !== e.type) {
-    n.replaceChild(f(t), r);
-    return;
-  }
-  const o = r;
-  for (const [i, a] of Object.entries(t.props))
-    i.startsWith("on") || o[i] !== a && (o[i] = a);
-  for (const i of Object.keys(e.props))
-    i in t.props || (o[i] = void 0);
-  const s = Math.max(t.children.length, e.children.length);
-  for (let i = 0; i < s; i++)
-    d(o, t.children[i], e.children[i], i);
-}
-function y(n) {
-  const t = n.tagName.toLowerCase(), e = {}, c = n.textContent;
-  Array.from(n.attributes).forEach((o) => {
-    e[o.name] = o.value;
-  });
-  const r = Array.from(n.childNodes).map((o) => {
-    if (o.nodeType === Node.ELEMENT_NODE)
-      return y(o);
-    if (o.nodeType === Node.TEXT_NODE)
-      return { type: "text", props: { value: o.textContent }, children: [] };
-  }).filter(Boolean);
-  return { type: t, props: e, children: r, content: c };
-}
-function h(n, t, e) {
-  const c = e.split(".").reduce((r, o) => r[o], t);
-  if (n.tagName === "INPUT") {
-    const r = n;
-    r.value = c, r.addEventListener("input", (o) => {
-      const s = o.target.value, i = e.split("."), a = i.pop(), u = i.reduce((l, p) => l[p], t);
-      u[a] = s, console.log(`Zaktualizowano ${e}:`, t);
+function d(o, c) {
+  function n(s, r = []) {
+    return new Proxy(s, {
+      get(t, i) {
+        const e = t[i];
+        return typeof e == "object" && e !== null ? n(e, [...r, i]) : e;
+      },
+      set(t, i, e) {
+        return t[i] = e, c([...r, i].join(".")), !0;
+      }
     });
   }
+  return n(o);
 }
-function E(n, t) {
-  const e = n.getAttribute("@click");
-  if (e) {
-    const c = new Function("model", `with(model) { ${e} }`);
-    n.addEventListener("click", () => c(t));
+function y(o, c, n) {
+  [
+    ...o.querySelectorAll(`[data-bind-path="${n}"]`).values()
+  ].forEach((r) => {
+    if (r.tagName === "INPUT") {
+      const t = r, i = n.split(".").reduce((e, a) => e[a], c);
+      t.value !== i && (t.value = i);
+    } else {
+      const t = r.textContent || "";
+      t.includes("{") && t.includes("}") ? h(r, c) : r.textContent = n.split(".").reduce((i, e) => i[e], c);
+    }
+  });
+}
+function p(o) {
+  const c = document.createElement(o.type);
+  o.content && (c.textContent = o.content);
+  for (const [n, s] of Object.entries(o.props))
+    if (n.startsWith("on") && typeof s == "function") {
+      const r = n.slice(2).toLowerCase();
+      c.addEventListener(r, s);
+    } else
+      c[n] = s;
+  return o.children.forEach((n) => {
+    const s = typeof n == "string" ? document.createTextNode(n) : p(n);
+    c.appendChild(s);
+  }), c;
+}
+function x(o, c, n, s = 0) {
+  const r = o.childNodes[s];
+  if (!n) {
+    o.appendChild(p(c));
+    return;
+  }
+  if (!c) {
+    r && o.removeChild(r);
+    return;
+  }
+  if (c.type !== n.type) {
+    o.replaceChild(p(c), r);
+    return;
+  }
+  const t = r;
+  for (const [e, a] of Object.entries(c.props))
+    e.startsWith("on") || t[e] !== a && (t[e] = a);
+  for (const e of Object.keys(n.props))
+    e in c.props || (t[e] = void 0);
+  const i = Math.max(c.children.length, n.children.length);
+  for (let e = 0; e < i; e++)
+    x(t, c.children[e], n.children[e], e);
+}
+function E(o) {
+  const c = o.tagName.toLowerCase(), n = {}, s = o.textContent;
+  Array.from(o.attributes).forEach((t) => {
+    n[t.name] = t.value;
+  });
+  const r = Array.from(o.childNodes).map((t) => {
+    if (t.nodeType === Node.ELEMENT_NODE)
+      return E(t);
+    if (t.nodeType === Node.TEXT_NODE)
+      return { type: "text", props: { value: t.textContent }, children: [] };
+  }).filter(Boolean);
+  return { type: c, props: n, children: r, content: s };
+}
+function C(o, c, n) {
+  const s = n.split(".").reduce((r, t) => r[t], c);
+  if (o.tagName === "INPUT") {
+    const r = o;
+    r.value = s, r.addEventListener("input", (t) => {
+      const i = t.target.value, e = n.split("."), a = e.pop(), u = e.reduce((l, f) => l[f], c);
+      u[a] = i;
+    });
+  } else
+    o.textContent = s;
+  o.setAttribute("data-bind-path", n);
+}
+function g(o, c) {
+  const n = o.getAttribute("@click");
+  if (n) {
+    const s = new Function("model", `with(model) { ${n} }`);
+    o.addEventListener("click", () => s(c));
   }
 }
-function g(n, t) {
-  const e = document.querySelector(n);
-  function c(r) {
-    const o = r.getAttribute("x-model");
-    o && h(r, t, o), E(r, t), Array.from(r.children).forEach((s) => c(s));
+function h(o, c) {
+  const n = o.textContent || "", s = n.matchAll(/\{\s*([\w.]+)\s*\}/g), r = [];
+  for (const i of s) {
+    const e = i[1].trim(), a = i[0];
+    r.push({ path: e, placeholder: a });
   }
-  c(e);
+  function t() {
+    let i = n;
+    for (const { path: e, placeholder: a } of r) {
+      const u = e.split(".").reduce((l, f) => l[f], c);
+      i = i.replace(a, u ?? "");
+    }
+    o.textContent = i;
+  }
+  t(), d(c, (i) => {
+    r.some(({ path: e }) => i.startsWith(e.split(".")[0])) && t();
+  });
+}
+function v(o, c) {
+  const n = document.querySelector(o), s = d(c, (t) => {
+    y(n, s, t);
+  });
+  function r(t) {
+    const i = t.getAttribute("x-model");
+    if (i && C(t, s, i), g(t, s), t.childNodes.length === 1 && t.childNodes[0].nodeType === Node.TEXT_NODE) {
+      const e = t.textContent || "";
+      e.includes("{") && e.includes("}") && h(t, s);
+    }
+    Array.from(t.children).forEach((e) => r(e));
+  }
+  r(n);
 }
 export {
-  E as bindClick,
-  h as bindXModel,
-  y as createVirtualDOM,
-  g as initializeApp,
-  f as render,
-  d as updateElement
+  g as bindClick,
+  E as createVirtualDOM,
+  v as initializeApp,
+  p as render,
+  x as updateElement
 };
 //# sourceMappingURL=index.es.js.map

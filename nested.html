@@ -13,11 +13,11 @@
   <p x-model="person.name"></p>
   <input x-model="person.name" type="text"/>
   <input x-model="person.address.city" type="text"/>
-  <button @click="person.address.zip = '20002'" id="o">Change ZIP</button>
+  <button @click="person.address.city = '20002'" id="o">Change ZIP</button>
 </div>
 
 <script type="module">
-    import { appX, initializeApp } from './dist/index.es.js';
+    import { initializeApp } from './dist/index.es.js';
 
     initializeApp('#app',{
         person: {

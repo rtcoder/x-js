@@ -1,5 +1,49 @@
 import {VNode} from './types/v-node.ts';
 
+function createReactiveModel(model: any, onChange: (path: string) => void): any {
+  function createProxy(obj: any, path: string[] = []): any {
+    return new Proxy(obj, {
+      get(target, key) {
+        const value = target[key];
+        if (typeof value === 'object' && value !== null) {
+          return createProxy(value, [...path, key as string]);
+        }
+        return value;
+      },
+      set(target, key, value) {
+        target[key] = value;
+        onChange([...path, key as string].join('.'));
+        return true;
+      },
+    });
+  }
+
+  return createProxy(model);
+}
+function updateHTML(root: HTMLElement, model: any, path: string): void {
+  const elements = [
+      ...root.querySelectorAll(`[data-bind-path="${path}"]`).values(),
+  ];
+
+  elements.forEach((element) => {
+    if (element.tagName === 'INPUT') {
+      const input = element as HTMLInputElement;
+      const value = path.split('.').reduce((obj, key) => obj[key], model);
+      if (input.value !== value) {
+        input.value = value;
+      }
+    } else {
+      const textContent = element.textContent || '';
+      if (textContent.includes('{') && textContent.includes('}')) {
+        bindPlaceholders(element as HTMLElement, model);
+      } else {
+        element.textContent = path.split('.').reduce((obj, key) => obj[key], model);
+      }
+    }
+  });
+}
+
+
 export function render(vNode: VNode): HTMLElement {
   const element = document.createElement(vNode.type);
   if (vNode.content) {
@@ -94,7 +138,7 @@ export function createVirtualDOM(element: HTMLElement): VNode {
   return {type, props, children, content};
 }
 
-export function bindXModel(element: HTMLElement, model: any, path: string): void {
+function bindXModel(element: HTMLElement, model: any, path: string): void {
   const target = path.split('.').reduce((obj, key) => obj[key], model);
 
   if (element.tagName === 'INPUT') {
@@ -109,10 +153,15 @@ export function bindXModel(element: HTMLElement, model: any, path: string): void
       const keys = path.split('.');
       const lastKey = keys.pop()!;
       const targetObject = keys.reduce((obj, key) => obj[key], model);
-      targetObject[lastKey] = newValue;
-      console.log(`Zaktualizowano ${path}:`, model);
+      targetObject[lastKey] = newValue; // To wywoła Proxy
     });
+  } else {
+    // Ustaw tekst początkowy
+    element.textContent = target;
   }
+
+  // Dodaj atrybut do identyfikacji elementu podczas aktualizacji
+  element.setAttribute('data-bind-path', path);
 }
 
 export function bindClick(element: HTMLElement, model: any): void {
@@ -122,23 +171,74 @@ export function bindClick(element: HTMLElement, model: any): void {
     element.addEventListener('click', () => fn(model));
   }
 }
+function bindPlaceholders(element: HTMLElement, model: any): void {
+  const originalText = element.textContent || '';
+
+  // Znajdź wszystkie wyrażenia w formacie { path.to.value }
+  const matches = originalText.matchAll(/\{\s*([\w.]+)\s*\}/g);
+
+  // Utwórz mapę powiązań placeholderów z modelem
+  const bindings: { path: string; placeholder: string }[] = [];
+  for (const match of matches) {
+    const path = match[1].trim(); // Ścieżka do modelu, np. "person.name"
+    const placeholder = match[0]; // Pełny placeholder, np. "{ person.name }"
+    bindings.push({ path, placeholder });
+  }
+
+  // Funkcja aktualizująca tekst elementu
+  function updateText() {
+    let updatedText = originalText;
+    for (const { path, placeholder } of bindings) {
+      const value = path.split('.').reduce((obj, key) => obj[key], model);
+      updatedText = updatedText.replace(placeholder, value ?? '');
+    }
+    element.textContent = updatedText;
+  }
+
+  // Ustaw początkowy tekst
+  updateText();
+
+  // Reaktywność: aktualizuj tekst przy zmianie modelu
+  createReactiveModel(model, (updatedPath) => {
+    if (bindings.some(({ path }) => updatedPath.startsWith(path.split('.')[0]))) {
+      updateText();
+    }
+  });
+}
+
 
 export function initializeApp(selector: string, model: any): void {
   const root = document.querySelector(selector) as HTMLElement;
 
+  // Reaktywność
+  const reactiveModel = createReactiveModel(model, (path) => {
+    updateHTML(root, reactiveModel, path);
+  });
+
+  // Przetwarzanie elementów
   function processElement(element: HTMLElement): void {
     // Obsługa x-model
-    const modelAttr = element.getAttribute("x-model");
+    const modelAttr = element.getAttribute('x-model');
     if (modelAttr) {
-      bindXModel(element, model, modelAttr);
+      bindXModel(element, reactiveModel, modelAttr);
     }
 
     // Obsługa @click
-    bindClick(element, model);
+    bindClick(element, reactiveModel);
+
+    // Obsługa placeholderów w tekście
+    if (element.childNodes.length === 1 && element.childNodes[0].nodeType === Node.TEXT_NODE) {
+      const textContent = element.textContent || '';
+      if (textContent.includes('{') && textContent.includes('}')) {
+        bindPlaceholders(element, reactiveModel);
+      }
+    }
 
     // Rekurencyjnie przetwarzaj dzieci
     Array.from(element.children).forEach((child) => processElement(child as HTMLElement));
   }
 
+
   processElement(root);
 }
+
