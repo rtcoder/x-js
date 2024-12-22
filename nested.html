@@ -9,6 +9,7 @@
 </head>
 <body>
 <div id="app">
+  { person.address.city }  {person.address.zip}
   <p>{ person.name }</p>
   <p x-model="person.name"></p>
   <input x-model="person.name" type="text"/>
@@ -17,9 +18,9 @@
 </div>
 
 <script type="module">
-    import { initializeApp } from './dist/index.es.js';
+    import { initializeAppWithVirtualDOM } from './dist/index.es.js';
 
-    initializeApp('#app',{
+    initializeAppWithVirtualDOM('#app',{
         person: {
             name: 'John Doe',
             address: {
